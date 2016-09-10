@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<!--Import Google Icon Font-->
+		<link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+		<!--Import materialize.css-->
+		<link type="text/css" rel="stylesheet" href="/static/css/materialize.min.css"  media="screen,projection"/>
+      <link type="text/css" rel="stylesheet" href="/static/css/index.css" media="screen,projection">
+		<!--Let browser know website is optimized for mobile-->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+	</head>
+	<body>
+      <nav>
+       <div class="nav-wrapper">
+            <a href="/" class="left backArrow"><i class="material-icons">arrow_back</i></a>
+            <a href="/" class="brand-logo center">Tiger Links</a>
+       </div>
+     </nav>
+        
+     <div class="container" id="signinForm">
+        <h3>Sign In</h3>
+        <div class="input-field">
+          <input id="word" type="text" class="validate">
+          <label for="word">Word of the day</label>
+        </div>
+        <div class="input-field">
+	    <select id="name">
+	      <option value="" disabled selected>Choose your name</option>
+            {%for tiger in tigers%}
+            <option value="{{tiger["id"]}}">{{tiger["name"].capitalize()}}</option>
+            {%endfor%}
+	    </select>
+	  </div>
+	  <button class="btn waves-effect waves-light" id="submit">Log in
+			<i class="material-icons right">send</i>
+		</button>
+     </div>
+
+		<!--Import jQuery before materialize.js-->
+		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+		<script type="text/javascript" src="/static/js/materialize.min.js"></script>
+		<script src="//cdn.jsdelivr.net/sockjs/1/sockjs.min.js"></script>
+		<script>
+			var realtimeConnection = new SockJS('http://162.243.84.167:8000/realtime');
+			var realtimeConnectionEstablished = false;
+			 realtimeConnection.onopen = function() {
+			     realtimeConnectionEstablished = true;
+			 };
+			 realtimeConnection.onmessage = function(message) {
+                var data = JSON.parse(message.data)
+                console.log(data)
+                if (data.type == "verification_response") {
+                    if (data.data == "true") {
+			 		Materialize.toast("You were logged in successfully", 4000)
+                    } else {
+                        Materialize.toast("The word of the day is incorrect", 4000)
+                    }   
+                }
+			 }
+			 realtimeConnection.onclose = function() {
+			     Materialize.toast("the website has been disconnected. Please reload to continue", 5000)
+			 };
+
+			$(document).ready(function() { //when document is ready grab the name data
+				$('select').material_select(); //intialize select
+			});
+
+			$("#submit").click(function() {
+				var word = $("#word").val();
+				var name = $("#name").val();
+                var textName = $("#name option:selected").text();
+
+				$("#word").val("")
+				//resets select
+				$("#name").prop('selectedIndex',0);
+				$("#name").material_select();
+
+				if (word && name) { //if both forms are filled
+					if (realtimeConnectionEstablished) {
+						realtimeConnection.send(JSON.stringify({
+                            type: "user_login",
+							id: name,
+							word: word,
+                            name: textName
+						}))
+					} else {
+						Materialize.toast("You are not connected to the server. Please reload the page to continue", 4000)
+					}
+				} else {
+					Materialize.toast("Please fill in all the forms", 4000)
+				}
+			})
+		</script>
+	</body>
+</html>

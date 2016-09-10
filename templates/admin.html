@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<!--Import Google Icon Font-->
+		<link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+		<!--Import materialize.css-->
+		<link type="text/css" rel="stylesheet" href="/static/css/materialize.min.css"  media="screen,projection"/>
+      <link type="text/css" rel="stylesheet" href="/static/css/index.css" media="screen,projection">
+		<!--Let browser know website is optimized for mobile-->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+	</head>
+	<body>
+      <nav>
+       <div class="nav-wrapper">
+         <a href="/" class="left backArrow"><i class="material-icons">arrow_back</i></a>
+         <a href="/" class="brand-logo center">Tiger Links</a>
+         <a href="/logout" class="right logoutButton"><i class="material-icons">exit_to_app</i></a>
+       </div>
+     </nav>
+        
+    <div id="loader">
+        <div class="center-align">
+         <div class="preloader-wrapper big active">
+          <div class="spinner-layer spinner-blue-only">
+            <div class="circle-clipper left">
+              <div class="circle"></div>
+            </div><div class="gap-patch">
+              <div class="circle"></div>
+            </div><div class="circle-clipper right">
+              <div class="circle"></div>
+            </div>
+          </div>
+        </div>
+        </div>
+     </div>
+
+     <div class="container mainContainer" id="tableContainer">
+           <div class="row">
+            <div class="col s12">
+              <ul class="tabs">
+                <li class="tab col s3"><a href="#administrationDiv" class="active">Administration</a></li>
+                <li class="tab col s3"><a href="#addTigerDiv">Add Tiger</a></li>
+                <li class="tab col s3"><a href="#removeTigerDiv">Remove Tiger</a></li>
+              </ul>
+            </div>
+            <div id="administrationDiv" class="col s12">
+                <h5>Reset Tigers</h5>
+                <a class="waves-effect waves-light btn red" id="resetTigers">Reset</a>
+                 <h5>Change Word of the Day</h5>
+                 <div class="file-field input-field">
+                  <div class="btn" id="wordUpdate">
+                    <span>Update</span>
+                  </div>
+                  <div class="file-path-wrapper">
+                    <input class="file-path validate" type="text" placeholder="Word of the Day..." value="{{ word }}" id="word">
+                  </div>
+                </div>
+            </div>
+            <div id="addTigerDiv" class="col s12">
+                <div class="file-field input-field">
+                  <div class="btn" id="nameAddButton">
+                    <span>Add</span>
+                  </div>
+                  <div class="file-path-wrapper">
+                    <input class="file-path validate" type="text" placeholder="Name..." id="nameAdd">
+                  </div>
+                </div>
+            </div>
+            <div id="removeTigerDiv" class="col s12">
+                <div class="input-field col s12">
+                <select id="removeName">
+                  <option value="" disabled selected>Choose who to remove</option>
+                    {%for tiger in tigers%}
+                    <option value="{{tiger["id"]}}">{{tiger["name"].capitalize()}}</option>
+                    {%endfor%}
+                </select>
+                <label>Name</label>
+                 <a class="waves-effect waves-light btn red" id="removeButton">Remove</a>
+              </div>
+            </div>
+          </div>
+     </div>
+
+		<!--Import jQuery before materialize.js-->
+		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+		<script type="text/javascript" src="/static/js/materialize.min.js"></script>
+        <script src="//cdn.jsdelivr.net/sockjs/1/sockjs.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                $('select').material_select();
+              });
+            
+            var realtimeConnection = new SockJS('http://162.243.84.167:8000/realtime');
+			 realtimeConnection.onopen = function() {
+			     $("#loader").hide();
+                 $("#tableContainer").show();
+			 };
+            realtimeConnection.onmessage = function(message) {
+                var data = JSON.parse(message.data)
+                if (data.type == "tigers_reset") {
+                    Materialize.toast("The tigers were reset", 4000)
+                }
+            }
+			 realtimeConnection.onclose = function() {
+			     Materialize.toast("the website has been disconnected. Please reload to continue", 5000)
+			 };
+            
+            $("#resetTigers").click(function() {
+                realtimeConnection.send(JSON.stringify({
+                    type: "reset_tigers"
+                }))
+            })
+            
+            $("#wordUpdate").click(function() {
+                var word = $("#word").val()
+                $.get("/changeword", {word: word}, function(data) {
+                    if (data == "true") {
+                        Materialize.toast("The word of the day was changed", 4000)
+                    } else {
+                        Materialize.toast("The word of the day was not changed", 4000)
+                    }
+                })
+            })
+            
+        $("#nameAddButton").click(function() {
+            var name = $("#nameAdd").val()
+            
+            $("#nameAdd").val("")
+            
+            if (name) {
+                $.post("/addtiger", {name: name}, function(data) {
+                    if (data == "true") {
+                        Materialize.toast("The tiger was addded", 4000)
+                    } else {
+                        Materialze.toast("The tiger was not added", 4000)
+                    }
+                })
+            } else {
+                Materialize.toast("Please enter a name", 4000)
+            }
+        })
+        
+        $("#removeButton").click(function() {
+            var id = $("#removeName").val()
+            
+            //resets select
+            $("#removeName").prop('selectedIndex',0);
+            $("#removeName").material_select();
+            
+            $.post("/removetiger", {id: id}, function(data) {
+                if (data == "true") {
+                    Materialize.toast("The tiger was deleted", 4000)
+                } else {
+                    Materialize.toast("The tiger was not deleted", 4000)
+                }
+            })
+        })
+        </script>
+	</body>
+</html>

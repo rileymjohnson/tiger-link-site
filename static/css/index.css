@@ -1,0 +1,16 @@
+#loader {
+	margin-top: 10px;
+}
+#tableContainer {
+	margin-bottom: 10px;
+    display: none;
+}
+.backArrow {
+    margin-left: 10px;
+}
+.logoutButton {
+    margin-right: 10px;
+}
+.mainContainer {
+    margin-top: 10px;
+}

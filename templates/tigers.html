@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<!--Import Google Icon Font-->
+		<link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+		<!--Import materialize.css-->
+		<link type="text/css" rel="stylesheet" href="/static/css/materialize.min.css"  media="screen,projection"/>
+      <link type="text/css" rel="stylesheet" href="/static/css/index.css" media="screen,projection">
+		<!--Let browser know website is optimized for mobile-->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+	</head>
+	<body>
+      <nav>
+       <div class="nav-wrapper">
+           <a href="/" class="left backArrow"><i class="material-icons">arrow_back</i></a>
+            <a href="/" class="brand-logo center">Tiger Links</a>
+       </div>
+     </nav>
+        
+    <div id="loader">
+        <div class="center-align">
+         <div class="preloader-wrapper big active">
+          <div class="spinner-layer spinner-blue-only">
+            <div class="circle-clipper left">
+              <div class="circle"></div>
+            </div><div class="gap-patch">
+              <div class="circle"></div>
+            </div><div class="circle-clipper right">
+              <div class="circle"></div>
+            </div>
+          </div>
+        </div>
+        </div>
+     </div>
+
+     <div id="tableContainer" class="container">
+        <table id="tigersTable" class="bordered centered striped highlight">
+         <thead>
+            <th>Name</th>
+            <th>Status</th>
+         </thead>
+         <tbody id="tigersTableBody">
+             {%for tiger in tigers%}
+             <tr>
+                 <td>{{tiger["name"].capitalize()}}</td>
+                 {%if tiger["value"] == 1%}
+                 <td><i class='material-icons' style='color: green'>done</i></td>
+                 {%else%}
+                 <td id="tiger{{tiger["id"]}}" class="statusIcon"><i class='material-icons' style='color: red'>clear</i></td>
+                 {%endif%}
+             </tr>
+             {%endfor%}
+         </tbody>
+        </table>
+     </div>
+
+		<!--Import jQuery before materialize.js-->
+		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+		<script type="text/javascript" src="/static/js/materialize.min.js"></script>
+        <script src="//cdn.jsdelivr.net/sockjs/1/sockjs.min.js"></script>
+        <script>
+            var realtimeConnection = new SockJS('http://162.243.84.167:8000/realtime');
+			 realtimeConnection.onopen = function() {
+			     $("#loader").hide();
+                 $("#tableContainer").show();
+			 };
+			 realtimeConnection.onmessage = function(message) {
+                var data = JSON.parse(message.data)
+                if (data.type == "user_login")  {
+                    $("#tiger" + data.id).html("<i class='material-icons' style='color: green'>done</i>")
+                    Materialize.toast(data.name + " has logged in")
+                }
+                if (data.type == "tigers_reset") {
+                    $(".statusIcon").html("<i class='material-icons' style='color: red'>clear</i>")
+                    Materialize.toast("The tigers were reset", 4000)
+                }
+			 }
+			 realtimeConnection.onclose = function() {
+			     Materialize.toast("the website has been disconnected. Please reload to continue", 5000)
+			 };
+        </script>
+	</body>
+</html>
